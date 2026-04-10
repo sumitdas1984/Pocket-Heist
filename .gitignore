@@ -61,6 +61,13 @@ node_modules/
 .pytest_cache/
 .coverage
 htmlcov/
+test_*.db
+.hypothesis/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
 # Build outputs
 /build
@@ -70,3 +77,16 @@ htmlcov/
 # Misc
 *.pem
 .vercel
+
+# Streamlit
+.streamlit/secrets.toml
+.streamlit/config.toml
+
+# Claude Code
+.claude/
+
+# # Python version management
+# .python-version
+
+# # UV package manager
+# uv.lock
