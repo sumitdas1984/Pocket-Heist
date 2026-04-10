@@ -4,7 +4,7 @@ A fun, gamified task assignment application where users create and manage "heist
 
 ## Overview
 
-Pocket Heist is a modern web application built with Next.js 16 and React 19 that allows teams to create, assign, and track playful missions or tasks in a gamified way. The app features a heist-themed interface where users can manage active assignments, view expired heists, and create new challenges.
+Pocket Heist is a web application that allows teams to create, assign, and track playful missions or tasks in a gamified way. The app features a heist-themed interface where users can manage active assignments, view expired heists, and create new challenges.
 
 ## Features
 
@@ -21,57 +21,27 @@ Pocket Heist is a modern web application built with Next.js 16 and React 19 that
 - **Heist Details** - View comprehensive information about individual heists
 
 ### User Interface
-- **Responsive Design** - Built with Tailwind CSS for modern, mobile-friendly layouts
-- **Icon System** - Lucide React icons for a polished visual experience
-- **Navigation** - Intuitive navbar component for easy app navigation
-- **Route Groups** - Organized page structure with public and dashboard sections
+- **Responsive Design** - Modern, mobile-friendly layouts
+- **Intuitive Navigation** - Easy app navigation with clear sections
+- **Organized Layout** - Separate public and authenticated user areas
 
 ## Tech Stack
 
-- **Framework**: Next.js 16 with App Router
-- **Frontend**: React 19, TypeScript
-- **Styling**: Tailwind CSS 4
-- **Icons**: Lucide React
-- **Testing**: Vitest with Testing Library
-- **Linting**: ESLint with Next.js config
+### Backend
+- **Framework**: FastAPI - Modern, fast Python web framework with automatic API documentation
+- **Database**: PostgreSQL/SQLite - Relational database for storing heists and user data
+- **ORM**: SQLAlchemy - Database abstraction and query builder
+- **Authentication**: JWT tokens - Secure stateless authentication
+- **Validation**: Pydantic - Data validation using Python type hints
 
-## Getting Started
+### Frontend
+- **Phase 1 - Streamlit**: Rapid prototyping and MVP development
+- **Phase 2 - React**: Production-ready, scalable UI (future migration)
 
-Install dependencies:
-
-```bash
-npm install
-```
-
-Run the development server:
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the app.
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm test` - Run tests with Vitest
-
-## Project Structure
-
-```
-app/
-├── (dashboard)/          # Protected dashboard routes
-│   ├── heists/          # Heist management pages
-│   └── layout.tsx       # Dashboard layout
-├── (public)/            # Public routes
-│   ├── login/          # Login page
-│   ├── signup/         # Signup page
-│   └── layout.tsx      # Public layout
-└── layout.tsx          # Root layout
-
-components/
-└── Navbar/             # Navigation component
-```
+### Architecture Approach
+The application follows an **API-first architecture** with complete separation between backend and frontend:
+- Backend exposes RESTful JSON API endpoints
+- All business logic resides in the backend
+- Frontend (Streamlit or React) consumes the same API
+- No backend changes required when migrating from Streamlit to React
+- CORS-enabled API for seamless React integration
