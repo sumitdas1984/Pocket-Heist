@@ -16,8 +16,9 @@ Key design goals:
 
 ```mermaid
 graph TD
-    subgraph Frontend ["Frontend (Streamlit Phase 1 / React Phase 2)"]
-        UI[Streamlit App]
+    subgraph Frontend ["Frontend"]
+        Phase1[Streamlit App - Phase 1]
+        Phase2[React App - Phase 2]
     end
 
     subgraph Backend ["Backend (FastAPI)"]
@@ -32,7 +33,8 @@ graph TD
         DB[(SQLite / PostgreSQL)]
     end
 
-    UI -->|HTTP JSON| Router
+    Phase1 -.->|HTTP JSON| Router
+    Phase2 -->|HTTP JSON| Router
     Router --> AuthMiddleware
     AuthMiddleware --> HeistService
     AuthMiddleware --> UserService
@@ -40,7 +42,12 @@ graph TD
     UserService --> Validator
     HeistService --> DB
     UserService --> DB
+
+    style Phase1 stroke-dasharray: 5 5
+    style Phase2 stroke:#f59e0b,stroke-width:3px
 ```
+
+**Note**: Dotted line indicates Phase 1 (Streamlit) is complete but will be replaced. Solid gold line shows Phase 2 (React) as the production target. Both frontends consume the same API without any backend modifications.
 
 ### Request Flow
 
@@ -87,9 +94,9 @@ sequenceDiagram
 | GET | `/heists/mine` | Yes | List heists created by current user |
 | GET | `/docs` | No | OpenAPI interactive docs |
 
-### Streamlit Frontend Screens
+### Phase 1: Streamlit Frontend Screens
 
-Based on the UI mockup (`ui-mockup/app.py`), the frontend has four screens:
+Based on the UI mockup (`ui-mockup/streamlit/`), the Streamlit frontend has four screens:
 
 1. **Login Screen** — centered card with "Establish Connection" header, operative codename + encryption key fields, "Authenticate" button. Dark terminal theme (`#0e1117` background, `#ffd700` gold accents).
 
@@ -100,6 +107,237 @@ Based on the UI mockup (`ui-mockup/app.py`), the frontend has four screens:
 4. **Plan New Heist (Mission Blueprint)** — form with: Mission Name, Target, Difficulty (selectbox: Training/Easy/Medium/Hard/Legendary), Assign to Operative, Intel/Mission Details (textarea). Deadline auto-set to +3 hours from creation.
 
 Sidebar navigation: War Room | Mission Archive | Plan New Heist, plus "Terminate Session (Logout)" button.
+
+### Phase 2: React Frontend Architecture
+
+Based on the UI mockup (`ui-mockup/react/App.jsx`), the React frontend follows a modern component-based architecture with client-side routing.
+
+#### Technology Stack
+
+- **Build Tool**: Vite (fast dev server, optimized builds)
+- **UI Library**: React 18+ with hooks
+- **Routing**: React Router v6
+- **HTTP Client**: Axios with interceptors
+- **Styling**: Tailwind CSS v3
+- **Icons**: Lucide React
+- **State Management**: React Context API + localStorage
+- **Date Handling**: date-fns or dayjs
+
+#### Component Hierarchy
+
+```
+App.jsx
+├── AuthContext.Provider (auth state)
+├── Router
+│   ├── /login → LandingPage
+│   └── / → DashboardLayout (protected)
+│       ├── Sidebar
+│       │   ├── Branding
+│       │   ├── NavItem × 4
+│       │   ├── UserProfile
+│       │   └── LogoutButton
+│       ├── Header (search, filter)
+│       └── Outlet (nested routes)
+│           ├── /war-room → WarRoom
+│           │   └── HeistGrid
+│           │       └── HeistCard × N
+│           ├── /my-assignments → MyAssignments
+│           │   └── HeistGrid
+│           ├── /create → BlueprintStudio
+│           │   └── CreateHeistForm
+│           └── /archive → IntelArchive
+│               └── HeistGrid
+```
+
+#### Routing Structure
+
+| Route | Component | Access | Description |
+|-------|-----------|--------|-------------|
+| `/login` | LandingPage | Public | Login/Register form |
+| `/` | DashboardLayout | Protected | Main layout with sidebar |
+| `/war-room` | WarRoom | Protected | Active heists (default) |
+| `/my-assignments` | MyAssignments | Protected | User's created heists |
+| `/create` | BlueprintStudio | Protected | Create new heist form |
+| `/archive` | IntelArchive | Protected | Expired/Aborted heists |
+
+Redirect logic:
+- `/` → `/war-room` (when authenticated)
+- Any protected route → `/login` (when not authenticated)
+
+#### State Management Strategy
+
+**Authentication State** (Context API):
+```javascript
+// AuthContext.jsx
+const AuthContext = createContext({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  login: (username, password) => Promise,
+  logout: () => void,
+});
+
+// Persisted in localStorage:
+// - 'jwt_token': JWT access token
+// - 'user': { username, rank } or null
+```
+
+**Heist Data** (Component-level state):
+- Fetched on mount via `useEffect`
+- Stored in component state with `useState`
+- Re-fetched after mutations (create, abort)
+- No global heist cache (keep it simple for Phase 2)
+
+#### API Client Layer
+
+**Service Architecture:**
+
+```javascript
+// src/services/api.js
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// Request interceptor: inject JWT
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('jwt_token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// Response interceptor: handle 401
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      // Clear auth and redirect to login
+      localStorage.clear();
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+**Service Modules:**
+
+```javascript
+// src/services/auth.js
+export const authService = {
+  register: (username, password) => api.post('/auth/register', { username, password }),
+  login: (username, password) => api.post('/auth/login', null, { params: { username, password } }),
+  logout: () => { localStorage.clear(); }
+};
+
+// src/services/heists.js
+export const heistsService = {
+  listActive: () => api.get('/heists'),
+  listMine: () => api.get('/heists/mine'),
+  listArchive: () => api.get('/heists/archive'),
+  getById: (id) => api.get(`/heists/${id}`),
+  create: (data) => api.post('/heists', data),
+  abort: (id) => api.patch(`/heists/${id}/abort`)
+};
+```
+
+#### Theme and Styling (Tailwind CSS)
+
+**Color Palette:**
+```javascript
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        'dark-bg': '#0a0a0c',        // Main background
+        'dark-card': '#111114',       // Card background
+        'dark-border': '#1e293b',     // Border color (slate-800)
+        'gold': {
+          DEFAULT: '#f59e0b',         // amber-500
+          light: '#fbbf24',           // amber-400
+        }
+      }
+    }
+  }
+}
+```
+
+**Key Design Patterns:**
+- Dark theme with `#0a0a0c` background
+- Gold/amber accents (`#f59e0b`) for primary actions and active states
+- Rounded corners: `rounded-xl` (cards), `rounded-2xl` (modals)
+- Hover effects: border glow, color transitions
+- Status badges: green (Active), blue (Completed), rose (Expired/Aborted)
+- Glassmorphism: `backdrop-blur-md` on sticky headers
+
+#### React Component Examples
+
+**HeistCard Component:**
+```jsx
+// src/components/HeistCard.jsx
+export const HeistCard = ({ heist, onAbort, showAbort }) => {
+  const statusColors = {
+    Active: 'text-green-500 border-green-500/20',
+    Completed: 'text-blue-500 border-blue-500/20',
+    Expired: 'text-rose-500 border-rose-500/20',
+    Aborted: 'text-rose-500 border-rose-500/20',
+  };
+
+  return (
+    <div className="bg-dark-card border border-slate-800 rounded-2xl overflow-hidden hover:border-amber-500/40 transition-all group">
+      <div className="p-6">
+        <span className={`text-[10px] font-bold uppercase px-2 py-1 rounded bg-slate-900 border ${statusColors[heist.status]}`}>
+          {heist.status}
+        </span>
+        <h3 className="text-xl font-bold text-white mb-2 group-hover:text-amber-500">
+          {heist.title}
+        </h3>
+        <p className="text-slate-400 text-sm line-clamp-2">{heist.description}</p>
+        {/* Info rows: Target, Difficulty, Operative, Deadline */}
+      </div>
+      <div className="bg-slate-900/50 p-4 border-t border-slate-800">
+        <button className="text-amber-500 hover:text-amber-400">View Intel</button>
+        {showAbort && heist.status === 'Active' && (
+          <button onClick={() => onAbort(heist.id)} className="text-rose-500">Abort</button>
+        )}
+      </div>
+    </div>
+  );
+};
+```
+
+**ProtectedRoute Component:**
+```jsx
+// src/components/ProtectedRoute.jsx
+export const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+};
+```
+
+#### Migration Notes (Streamlit → React)
+
+**What Changes:**
+- Session state → localStorage + Context API
+- `st.session_state.access_token` → `localStorage.getItem('jwt_token')`
+- Page navigation: `st.radio()` → React Router `<Link>` + `useNavigate()`
+- Forms: Streamlit form components → controlled inputs with `useState`
+- Data fetching: `api_client.py` functions → Axios service calls
+- Styling: Streamlit CSS markdown → Tailwind utility classes
+
+**What Stays the Same:**
+- **Zero backend changes** — all API endpoints remain identical
+- JWT token structure and expiry (24 hours)
+- Request/response JSON schemas
+- Business logic and validation rules
+- Database models and relationships
+
+**Migration Path:**
+1. Build React app in parallel (`frontend-react/`)
+2. Test against existing backend
+3. Deploy React build, update CORS origins
+4. Archive Streamlit code (`frontend/` → `frontend-streamlit-legacy/`)
 
 ### Service Layer Interfaces
 
