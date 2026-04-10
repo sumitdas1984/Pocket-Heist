@@ -49,20 +49,27 @@ Pocket Heist is a **production-ready** web application that allows teams to crea
 **Login Page**
 > Dark-themed authentication with spy aesthetic
 
+![Login Page](ui-mockup/react/login.png)
+
 **War Room - Active Heists**
 > Real-time mission tracking with countdown timers
 
-**Heist Details Modal**
-> Full mission briefing with creator info and deadline
+![War Room](ui-mockup/react/war_room.png)
+
+**My Assignments**
+> Track your created heists by status
+
+![My Assignments](ui-mockup/react/my_heist.png)
 
 **Blueprint Studio - Create Heist**
 > Intuitive form with auto-deadline (+3 hours)
 
+![Create Heist](ui-mockup/react/create_heist.png)
+
 **Intel Archive**
 > Browse expired and aborted missions
 
-**Responsive Design**
-> 1-column (mobile), 2-column (tablet), 3-column (desktop)
+![Intel Archive](ui-mockup/react/intel_archive.png)
 
 > 💡 **Tip:** Run the app locally to see the full experience! Follow the Quick Start guide below.
 
