@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from backend.enums import Difficulty, HeistStatus
@@ -40,7 +40,12 @@ class HeistCreate(BaseModel):
     @classmethod
     def deadline_must_be_future(cls, v: datetime) -> datetime:
         """Validate that deadline is in the future"""
-        if v <= datetime.utcnow():
+        # Make comparison timezone-aware to handle both naive and aware datetimes
+        now = datetime.now(timezone.utc)
+        # If incoming datetime is naive, make it aware (assume UTC)
+        if v.tzinfo is None:
+            v = v.replace(tzinfo=timezone.utc)
+        if v <= now:
             raise ValueError("deadline must be in the future")
         return v
 
