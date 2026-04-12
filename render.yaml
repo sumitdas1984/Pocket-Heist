@@ -13,7 +13,7 @@ services:
           name: pocket-heist-db
           property: connectionString
       - key: ALLOWED_ORIGINS
-        value: https://pocket-heist.onrender.com
+        value: https://pocket-heist-frontend.onrender.com
 
   # Frontend Static Site
   - type: web

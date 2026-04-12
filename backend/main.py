@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,17 +16,24 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS for localhost origins
+# Configure CORS - allow localhost for dev + production origins from env
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",  # Vite React dev server
+    "http://localhost:8501",  # Streamlit default port
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8501",
+]
+
+# Add production origins from environment variable (comma-separated)
+env_origins = os.getenv("ALLOWED_ORIGINS", "")
+if env_origins:
+    allowed_origins.extend([origin.strip() for origin in env_origins.split(",")])
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",  # Vite React dev server
-        "http://localhost:8501",  # Streamlit default port
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",  # Vite React dev server
-        "http://127.0.0.1:8501",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
